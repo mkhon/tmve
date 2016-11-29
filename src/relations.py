@@ -1,13 +1,13 @@
 from db import db
 import math
 import urllib2
-import sys
+import os, sys
 
 template = None
 
-def import_template(template_name):
+def import_template(template_dir, template_name):
     global template
-    sys.path.append("templates/" + template_name)
+    sys.path.append(os.path.join(template_dir, template_name))
     template = __import__(template_name)
 
 class Document:

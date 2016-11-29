@@ -6,6 +6,8 @@ from utils import *
 from relations import *
 from db import db
 
+template_dir = os.path.join(os.path.dirname(sys.argv[0]), 'templates')
+
 def parse_command():
     #TODO: expand command line arg options
     if len(sys.argv) < 2 or len(sys.argv) > 3:
@@ -92,7 +94,7 @@ def get_template(project_file):
         sys.exit(1)
 
     template_name = template_line[len(TEMPLATE_PREFIX):].strip()
-    template_filename = "src/templates/" + template_name + "/" + template_name + ".tmvt"
+    template_filename = os.path.join(template_dir, template_name, template_name + ".tmvt")
     
     try:
         template_file = open(template_filename)
@@ -103,7 +105,7 @@ def get_template(project_file):
     # import template module
     #TODO: need a try-except for non existing or bad py files
     #TODO: more extensive template validation 
-    sys.path.append("src/templates/" + template_name)
+    sys.path.append(os.path.join(template_dir, template_name))
     template = __import__(template_name)
     template.validate() #TODO: exit if this fails
 
@@ -160,27 +162,27 @@ def xml_rigamroll(src_filename, dst_filename, html_strings, html_inserts, templa
 def build_ajax(project_name, template_name, html_strings, html_inserts, myrelations):
     # copy css files 
     #TODO: consider moving css files to a css dir
-    shutil.copy("src/templates/" + template_name + "/" + template_name + ".css", project_name + "/styling.css")
+    shutil.copy(os.path.join(template_dir, template_name, template_name + ".css"), os.path.join(project_name, "styling.css"))
 
     # import template-specific source
-    sys.path.append("src/templates/" + template_name)
+    sys.path.append(os.path.join(template_dir, template_name))
     template = __import__(template_name)
 
     # copy template html files to project dir
-    html_dir = "src/templates/" + template_name + "/html/"
+    html_dir = os.path.join(template_dir, template_name, "html")
     html_filenames = os.listdir(html_dir)
     for html_filename in html_filenames:
         if html_filename.startswith('.'):
             continue
-        src_filepath = html_dir + html_filename
-        dst_filepath = project_name + "/" + html_filename
+        src_filepath = os.path.join(html_dir, html_filename)
+        dst_filepath = os.path.join(project_name, html_filename)
 
         if html_filename.endswith(".html"):
             xml_rigamroll(src_filepath, dst_filepath, html_strings, html_inserts, template, myrelations, None)
-        elif os.path.isdir(html_dir + html_filename):
+        elif os.path.isdir(os.path.join(html_dir, html_filename)):
             printv("Directory: "+ html_filename)
             if html_filename == "images" or html_filename == "js":
-                shutil.copytree("src/templates/" + template_name + "/html/" + html_filename, project_name + "/" + html_filename + "/")
+                shutil.copytree(os.path.join(template_dir, template_name, "html", html_filename), os.path.join(project_name, html_filename))
                 continue
             
             os.makedirs(dst_filepath)
@@ -189,11 +191,11 @@ def build_ajax(project_name, template_name, html_strings, html_inserts, myrelati
             tokentype = ''
             
             if html_filename == "browse":
-                for filename in os.listdir(html_dir + html_filename):
+                for filename in os.listdir(os.path.join(html_dir, html_filename)):
                     if filename.startswith('.'):
                         continue
-                    src = src_filepath + '/' + filename
-                    dst = dst_filepath + '/' + filename
+                    src = os.path.join(src_filepath, filename)
+                    dst = os.path.join(dst_filepath, filename)
                     xml_rigamroll(src, dst, html_strings, html_inserts, template, myrelations, None)
                 continue
             elif html_filename == "topics":
@@ -210,16 +212,16 @@ def build_ajax(project_name, template_name, html_strings, html_inserts, myrelati
 
             #TODO: expand to find multiple html files per dir
             src_filename = ''
-            filenames = os.listdir(html_dir + html_filename)
+            filenames = os.listdir(os.path.join(html_dir, html_filename))
             i = 0
             while src_filename == '' or src_filename.startswith('.'):
                 src_filename = filenames[i] # find the one html file here
                 i += 1
-            src_filepath += "/" + src_filename
+            src_filepath = os.path.join(src_filepath, src_filename)
             printv(" source file: " + src_filepath)
 
             for token in tokenset:
-                token_dst_filepath =  dst_filepath + "/" + token.get_safe_title() + ".html"
+                token_dst_filepath = os.path.join(dst_filepath, token.get_safe_title() + ".html")
                 token_html_strings = html_strings.copy()
                 token_html_strings[token_type] = token.title #token-specific
                 xml_rigamroll(src_filepath, token_dst_filepath, token_html_strings, html_inserts, template, myrelations, token)
@@ -228,7 +230,7 @@ def main():
     project_filename = parse_command()
     project_file = open_project(project_filename)
     template_name, template_file = get_template(project_file)
-    import_template(template_name)
+    import_template(template_dir, template_name)
     database_filename = get_database_filename(project_file)
     html_strings, html_inserts = get_template_requirements(template_name, template_file)
     html_strings = fill_requirements(project_file, html_strings)
