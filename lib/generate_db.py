@@ -113,7 +113,7 @@ def write_doc_doc(con, cur, gamma_file):
     con.commit()
 
     gamma = np.loadtxt(gamma_file)
-    theta = gamma / gamma.sum(1)
+    theta = gamma / gamma.sum(axis=1, keepdims=True)
 
     # get the closest 100 relations per document
     for a in range(len(theta)):
